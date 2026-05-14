@@ -245,7 +245,6 @@ export default defineContentScript({
 
     const handleDetectedText = (text: string) => {
       if (shouldIgnoreText(text)) return;
-      if (isPromptVisible) return;
       showPrompt(currentText);
     };
 
