@@ -1,27 +1,18 @@
 import './style.css';
+import { getSettings, saveSettings } from '@/lib/settings';
 
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <main class="popup">
-    <header>
-      <div>
-        <p class="eyebrow">Obsidian AI Clipper</p>
-        <h1>保存剪贴板</h1>
-      </div>
+    <section class="top-row">
+      <input id="targetFolder" list="folderList" placeholder="Daily Notes" />
+      <datalist id="folderList"></datalist>
       <button class="icon-button" id="settings" title="打开设置" type="button">⚙</button>
-    </header>
-
-    <section class="flow">
-      <span>1. 复制内容</span>
-      <span>2. 读取剪贴板</span>
-      <span>3. 发送到 Obsidian</span>
     </section>
 
-    <section class="status" id="status">点击“读取剪贴板”，确认预览内容后再发送。</section>
-
-    <textarea id="preview" placeholder="点击“读取剪贴板”后在这里预览内容" spellcheck="false"></textarea>
+    <textarea id="preview" placeholder="点击“读取并保存”后会在这里显示内容" spellcheck="false"></textarea>
 
     <div class="actions">
-      <button id="readClipboard" type="button">读取剪贴板</button>
+      <button id="readClipboard" type="button">读取并保存</button>
       <button id="saveClipboard" class="primary" type="button" disabled>发送到 Obsidian</button>
     </div>
 
@@ -29,17 +20,13 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   </main>
 `;
 
-const statusEl = document.querySelector<HTMLDivElement>('#status')!;
 const previewEl = document.querySelector<HTMLTextAreaElement>('#preview')!;
 const readButton = document.querySelector<HTMLButtonElement>('#readClipboard')!;
 const saveButton = document.querySelector<HTMLButtonElement>('#saveClipboard')!;
 const settingsButton = document.querySelector<HTMLButtonElement>('#settings')!;
 const lastResultEl = document.querySelector<HTMLElement>('#lastResult')!;
-
-function setStatus(message: string, kind: 'idle' | 'success' | 'error' = 'idle') {
-  statusEl.textContent = message;
-  statusEl.dataset.kind = kind;
-}
+const targetFolderEl = document.querySelector<HTMLInputElement>('#targetFolder')!;
+const folderListEl = document.querySelector<HTMLDataListElement>('#folderList')!;
 
 function updateSaveState() {
   saveButton.disabled = previewEl.value.trim().length === 0;
@@ -64,18 +51,70 @@ async function refreshLastResult() {
     : `最近一次：${formatTime(result.savedAt)} 保存失败：${result.error}`;
 }
 
+async function loadFolderChoices() {
+  try {
+    const result = await browser.runtime.sendMessage({ type: 'list-folders' });
+    const folders: string[] = Array.isArray(result?.folders) ? result.folders : [];
+    folderListEl.innerHTML = '';
+    folders.forEach((folder) => {
+      const option = document.createElement('option');
+      option.value = folder;
+      folderListEl.appendChild(option);
+    });
+  } catch {
+    folderListEl.innerHTML = '';
+  }
+}
+
+async function saveFolderPreference() {
+  const settings = await getSettings();
+  const next = targetFolderEl.value.trim() || settings.targetFolder;
+  await saveSettings({ ...settings, targetFolder: next });
+}
+
 settingsButton.addEventListener('click', () => {
   void browser.runtime.openOptionsPage();
 });
 
+targetFolderEl.addEventListener('change', () => {
+  void saveFolderPreference();
+});
+
 readButton.addEventListener('click', async () => {
+  readButton.disabled = true;
+  saveButton.disabled = true;
+
   try {
     const text = await navigator.clipboard.readText();
     previewEl.value = text;
     updateSaveState();
-    setStatus(text.trim() ? `已读取 ${text.trim().length} 个字符，确认后发送。` : '剪贴板里没有文本。');
+
+    if (!text.trim()) {
+      lastResultEl.dataset.kind = 'error';
+      lastResultEl.textContent = '剪贴板里没有文本。';
+      return;
+    }
+
+    const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
+    const result = await browser.runtime.sendMessage({
+      type: 'save-clip',
+      targetFolder: targetFolderEl.value.trim(),
+      payload: {
+        text,
+        source: 'clipboard',
+        pageTitle: tab?.title,
+        pageUrl: tab?.url,
+      },
+    });
+
+    await refreshLastResult();
   } catch (error) {
-    setStatus(`读取失败：${(error as Error).message}`, 'error');
+    lastResultEl.dataset.kind = 'error';
+    lastResultEl.textContent = `读取或保存失败：${(error as Error).message}`;
+    await refreshLastResult();
+  } finally {
+    readButton.disabled = false;
+    updateSaveState();
   }
 });
 
@@ -83,12 +122,12 @@ previewEl.addEventListener('input', updateSaveState);
 
 saveButton.addEventListener('click', async () => {
   saveButton.disabled = true;
-  setStatus('正在发送到 Obsidian...');
 
   try {
     const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
     const result = await browser.runtime.sendMessage({
       type: 'save-clip',
+      targetFolder: targetFolderEl.value.trim(),
       payload: {
         text: previewEl.value,
         source: 'clipboard',
@@ -97,14 +136,17 @@ saveButton.addEventListener('click', async () => {
       },
     });
 
-    setStatus(`已保存到 ${result.path}，写入 ${result.bytes} bytes。`, 'success');
     await refreshLastResult();
   } catch (error) {
-    setStatus(`保存失败：${(error as Error).message}`, 'error');
+    lastResultEl.dataset.kind = 'error';
+    lastResultEl.textContent = `保存失败：${(error as Error).message}`;
     await refreshLastResult();
   } finally {
     updateSaveState();
   }
 });
 
+const settings = await getSettings();
+targetFolderEl.value = settings.targetFolder;
+await loadFolderChoices();
 void refreshLastResult();

@@ -1,4 +1,4 @@
-import { getTargetPath, normalizeApiUrl, type AppSettings } from './settings';
+import { normalizeApiUrl, type AppSettings } from './settings';
 
 export type ClipSource = 'selection' | 'clipboard';
 
@@ -13,6 +13,24 @@ export interface SaveResult {
   path: string;
   bytes: number;
   savedAt: string;
+}
+
+function normalizeFolderPath(folder: string): string {
+  return folder.replace(/\\/g, '/').replace(/^\/+|\/+$/g, '');
+}
+
+function slugFromText(text: string): string {
+  const compact = text.replace(/\s+/g, ' ').trim();
+  const title = compact.slice(0, 20).trim() || '未命名剪藏';
+  return title.replace(/[\\/:*?"<>|#[\]]/g, ' ');
+}
+
+function buildClipPath(settings: AppSettings, payload: ClipPayload, now = new Date()): string {
+  const folder = normalizeFolderPath(settings.targetFolder) || 'Daily Notes';
+  const pad = (value: number) => value.toString().padStart(2, '0');
+  const stamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+  const title = slugFromText(payload.text);
+  return `${folder}/${stamp}-${title}.md`;
 }
 
 function encodeVaultPath(path: string): string {
@@ -87,6 +105,36 @@ async function request(settings: AppSettings, path: string, init: RequestInit): 
   return response;
 }
 
+function collectFoldersFromList(raw: unknown): string[] {
+  const folders = new Set<string>();
+  const visit = (node: unknown) => {
+    if (typeof node === 'string') {
+      if (node.endsWith('/')) folders.add(normalizeFolderPath(node));
+      return;
+    }
+    if (!node || typeof node !== 'object') return;
+
+    const item = node as Record<string, unknown>;
+    const path = typeof item.path === 'string' ? item.path : typeof item.name === 'string' ? item.name : '';
+    const isDir =
+      item.type === 'directory' ||
+      item.type === 'folder' ||
+      item.is_directory === true ||
+      item.isDirectory === true ||
+      path.endsWith('/');
+
+    if (path && isDir) folders.add(normalizeFolderPath(path));
+
+    const children = item.children;
+    if (Array.isArray(children)) children.forEach(visit);
+  };
+
+  if (Array.isArray(raw)) raw.forEach(visit);
+  else visit(raw);
+
+  return [...folders].filter(Boolean).sort((a, b) => a.localeCompare(b));
+}
+
 export async function testObsidianConnection(settings: AppSettings): Promise<void> {
   if (!settings.apiKey.trim()) {
     throw new Error('请先填写 Local REST API 密钥。');
@@ -103,11 +151,11 @@ export async function saveClipToObsidian(
     throw new Error('请先在设置页填写 Local REST API 密钥。');
   }
 
-  const path = getTargetPath(settings);
+  const path = buildClipPath(settings, payload);
   const markdown = formatClipMarkdown(payload);
 
   await request(settings, `vault/${encodeVaultPath(path)}`, {
-    method: 'POST',
+    method: 'PUT',
     headers: { 'Content-Type': 'text/markdown' },
     body: markdown,
   });
@@ -121,4 +169,16 @@ export async function saveClipToObsidian(
     bytes: new Blob([markdown]).size,
     savedAt: new Date().toISOString(),
   };
+}
+
+export async function listObsidianFolders(settings: AppSettings): Promise<string[]> {
+  if (!settings.apiKey.trim()) {
+    throw new Error('请先在设置页填写 Local REST API 密钥。');
+  }
+
+  const response = await request(settings, 'vault/', { method: 'GET' });
+  const body = await response.json().catch(() => null);
+  const folders = collectFoldersFromList(body);
+  if (folders.length === 0) return [settings.targetFolder];
+  return folders;
 }

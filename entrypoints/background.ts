@@ -1,13 +1,14 @@
 import { getSettings } from '@/lib/settings';
-import { saveClipToObsidian, testObsidianConnection, type ClipPayload, type SaveResult } from '@/lib/obsidian';
+import { listObsidianFolders, saveClipToObsidian, testObsidianConnection, type ClipPayload, type SaveResult } from '@/lib/obsidian';
 
 const CONTEXT_MENU_ID = 'save-selection-to-obsidian';
 const LAST_RESULT_KEY = 'local:last-save-result';
 
 type RuntimeMessage =
-  | { type: 'save-clip'; payload: ClipPayload }
+  | { type: 'save-clip'; payload: ClipPayload; targetFolder?: string }
   | { type: 'test-connection' }
-  | { type: 'get-last-result' };
+  | { type: 'get-last-result' }
+  | { type: 'list-folders' };
 
 type LastSaveResult = {
   ok: boolean;
@@ -84,9 +85,10 @@ async function showPageToast(tabId: number | undefined, message: string, ok: boo
     .catch(() => undefined);
 }
 
-async function handleSave(payload: ClipPayload) {
+async function handleSave(payload: ClipPayload, targetFolder?: string) {
   const settings = await getSettings();
-  const result = await saveClipToObsidian(settings, payload);
+  const effectiveSettings = targetFolder?.trim() ? { ...settings, targetFolder: targetFolder.trim() } : settings;
+  const result = await saveClipToObsidian(effectiveSettings, payload);
   const lastResult: LastSaveResult = {
     ok: true,
     source: payload.source,
@@ -143,7 +145,7 @@ export default defineBackground(() => {
 
   browser.runtime.onMessage.addListener((message: RuntimeMessage) => {
     if (message.type === 'save-clip') {
-      return handleSave(message.payload).catch(async (error: Error) => {
+      return handleSave(message.payload, message.targetFolder).catch(async (error: Error) => {
         await handleFailure(message.payload, error);
         throw error;
       });
@@ -157,6 +159,10 @@ export default defineBackground(() => {
 
     if (message.type === 'get-last-result') {
       return storage.getItem<LastSaveResult>(LAST_RESULT_KEY);
+    }
+
+    if (message.type === 'list-folders') {
+      return getSettings().then(listObsidianFolders).then((folders) => ({ folders }));
     }
 
     return undefined;
