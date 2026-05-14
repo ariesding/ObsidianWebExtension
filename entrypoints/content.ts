@@ -106,36 +106,6 @@ export default defineContentScript({
         right: '16px',
         top: '16px',
         zIndex: '2147483647',
-        font: '13px/1.4 "Segoe UI","Microsoft YaHei",sans-serif',
-        color: '#222',
-      });
-
-      const trigger = document.createElement('button');
-      trigger.type = 'button';
-      trigger.title = '有新复制内容，悬停查看';
-      trigger.textContent = '📋';
-      Object.assign(trigger.style, {
-        width: '34px',
-        height: '34px',
-        borderRadius: '999px',
-        border: '1px solid #cfcfcf',
-        background: '#ffffff',
-        boxShadow: '0 6px 16px rgba(0, 0, 0, 0.14)',
-        cursor: 'pointer',
-        fontSize: '16px',
-        lineHeight: '1',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '0',
-      });
-      root.appendChild(trigger);
-
-      const panel = document.createElement('div');
-      Object.assign(panel.style, {
-        position: 'absolute',
-        right: '0',
-        top: '40px',
         width: '360px',
         maxWidth: 'calc(100vw - 24px)',
         background: '#ffffff',
@@ -143,13 +113,14 @@ export default defineContentScript({
         borderRadius: '8px',
         boxShadow: '0 8px 20px rgba(0, 0, 0, 0.14)',
         padding: '10px',
-        display: 'none',
+        font: '13px/1.4 "Segoe UI","Microsoft YaHei",sans-serif',
+        color: '#222',
       });
 
       const title = document.createElement('div');
       title.textContent = '检测到新复制内容，是否保存到 Obsidian？';
       title.style.marginBottom = '8px';
-      panel.appendChild(title);
+      root.appendChild(title);
 
       const preview = document.createElement('div');
       preview.textContent = text;
@@ -166,7 +137,7 @@ export default defineContentScript({
         fontSize: '12px',
         lineHeight: '1.5',
       });
-      panel.appendChild(preview);
+      root.appendChild(preview);
 
       const counter = document.createElement('div');
       counter.textContent = `${text.length} 字符`;
@@ -176,7 +147,7 @@ export default defineContentScript({
         marginBottom: '8px',
         textAlign: 'right',
       });
-      panel.appendChild(counter);
+      root.appendChild(counter);
 
       const folderInput = document.createElement('input');
       folderInput.value = cachedFolder;
@@ -193,7 +164,7 @@ export default defineContentScript({
       folderInput.addEventListener('input', () => {
         void saveFolder(folderInput.value);
       });
-      panel.appendChild(folderInput);
+      root.appendChild(folderInput);
 
       const actions = document.createElement('div');
       Object.assign(actions.style, {
@@ -250,20 +221,7 @@ export default defineContentScript({
 
       actions.appendChild(skip);
       actions.appendChild(save);
-      panel.appendChild(actions);
-
-      root.appendChild(panel);
-
-      const openPanel = () => {
-        panel.style.display = 'block';
-      };
-      const closePanel = () => {
-        panel.style.display = 'none';
-      };
-      root.addEventListener('mouseenter', openPanel);
-      root.addEventListener('mouseleave', closePanel);
-      trigger.addEventListener('focus', openPanel);
-      trigger.addEventListener('blur', closePanel);
+      root.appendChild(actions);
 
       root.addEventListener('mouseenter', pauseAutoClose);
       root.addEventListener('mouseleave', scheduleAutoClose);
