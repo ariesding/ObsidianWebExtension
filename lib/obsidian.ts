@@ -107,14 +107,31 @@ async function request(settings: AppSettings, path: string, init: RequestInit): 
 
 function collectFoldersFromList(raw: unknown): string[] {
   const folders = new Set<string>();
+  const addFoldersFromFilePath = (filePath: string) => {
+    const normalized = normalizeFolderPath(filePath);
+    if (!normalized) return;
+    const parts = normalized.split('/').filter(Boolean);
+    if (parts.length <= 1) return;
+    for (let i = 1; i < parts.length; i += 1) {
+      folders.add(parts.slice(0, i).join('/'));
+    }
+  };
   const visit = (node: unknown) => {
     if (typeof node === 'string') {
-      if (node.endsWith('/')) folders.add(normalizeFolderPath(node));
+      if (node.endsWith('/')) {
+        folders.add(normalizeFolderPath(node));
+      } else {
+        addFoldersFromFilePath(node);
+      }
       return;
     }
     if (!node || typeof node !== 'object') return;
 
     const item = node as Record<string, unknown>;
+    if (Array.isArray(item.files)) {
+      item.files.forEach(visit);
+      return;
+    }
     const path = typeof item.path === 'string' ? item.path : typeof item.name === 'string' ? item.name : '';
     const isDir =
       item.type === 'directory' ||
@@ -124,6 +141,7 @@ function collectFoldersFromList(raw: unknown): string[] {
       path.endsWith('/');
 
     if (path && isDir) folders.add(normalizeFolderPath(path));
+    else if (path) addFoldersFromFilePath(path);
 
     const children = item.children;
     if (Array.isArray(children)) children.forEach(visit);

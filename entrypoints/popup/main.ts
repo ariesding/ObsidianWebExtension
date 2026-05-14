@@ -4,8 +4,7 @@ import { getSettings, saveSettings } from '@/lib/settings';
 document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
   <main class="popup">
     <section class="top-row">
-      <input id="targetFolder" list="folderList" placeholder="Daily Notes" />
-      <datalist id="folderList"></datalist>
+      <input id="targetFolder" placeholder="输入文件夹名称" />
       <button class="icon-button" id="settings" title="打开设置" type="button">⚙</button>
     </section>
 
@@ -26,7 +25,6 @@ const saveButton = document.querySelector<HTMLButtonElement>('#saveClipboard')!;
 const settingsButton = document.querySelector<HTMLButtonElement>('#settings')!;
 const lastResultEl = document.querySelector<HTMLElement>('#lastResult')!;
 const targetFolderEl = document.querySelector<HTMLInputElement>('#targetFolder')!;
-const folderListEl = document.querySelector<HTMLDataListElement>('#folderList')!;
 
 function updateSaveState() {
   saveButton.disabled = previewEl.value.trim().length === 0;
@@ -51,21 +49,6 @@ async function refreshLastResult() {
     : `最近一次：${formatTime(result.savedAt)} 保存失败：${result.error}`;
 }
 
-async function loadFolderChoices() {
-  try {
-    const result = await browser.runtime.sendMessage({ type: 'list-folders' });
-    const folders: string[] = Array.isArray(result?.folders) ? result.folders : [];
-    folderListEl.innerHTML = '';
-    folders.forEach((folder) => {
-      const option = document.createElement('option');
-      option.value = folder;
-      folderListEl.appendChild(option);
-    });
-  } catch {
-    folderListEl.innerHTML = '';
-  }
-}
-
 async function saveFolderPreference() {
   const settings = await getSettings();
   const next = targetFolderEl.value.trim() || settings.targetFolder;
@@ -77,6 +60,9 @@ settingsButton.addEventListener('click', () => {
 });
 
 targetFolderEl.addEventListener('change', () => {
+  void saveFolderPreference();
+});
+targetFolderEl.addEventListener('input', () => {
   void saveFolderPreference();
 });
 
@@ -148,5 +134,4 @@ saveButton.addEventListener('click', async () => {
 
 const settings = await getSettings();
 targetFolderEl.value = settings.targetFolder;
-await loadFolderChoices();
 void refreshLastResult();
