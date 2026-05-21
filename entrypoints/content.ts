@@ -4,6 +4,7 @@ export default defineContentScript({
   main() {
     const SETTINGS_KEY = 'local:obsidian-ai-clipper-settings';
     const LAST_CLIPBOARD_KEY = 'local:obsidian-ai-clipper-last-clipboard-text';
+    const LAST_PROMPTED_KEY = 'local:obsidian-ai-clipper-last-prompted-text';
     const containerId = 'obsidian-ai-clipper-copy-prompt';
     const defaultAutoCloseMs = 10000;
     const hoverExpandDelayMs = 250;
@@ -15,6 +16,7 @@ export default defineContentScript({
     let currentSource: 'selection' | 'clipboard' = 'clipboard';
     let cachedFolder = 'Daily Notes';
     let globalLastClipboard = '';
+    let globalLastPrompted = '';
 
     let mode: 'hidden' | 'peek' | 'expanded' | 'saving' = 'hidden';
     let autoCloseTimer: number | null = null;
@@ -137,10 +139,29 @@ export default defineContentScript({
       }
     };
 
+    const loadLastPrompted = async () => {
+      try {
+        const raw = await browser.storage.local.get(LAST_PROMPTED_KEY);
+        const value = raw?.[LAST_PROMPTED_KEY];
+        if (typeof value === 'string') globalLastPrompted = value;
+      } catch {
+        // ignore
+      }
+    };
+
     const saveLastClipboard = async (text: string) => {
       globalLastClipboard = text;
       try {
         await browser.storage.local.set({ [LAST_CLIPBOARD_KEY]: text });
+      } catch {
+        // ignore
+      }
+    };
+
+    const saveLastPrompted = async (text: string) => {
+      globalLastPrompted = text;
+      try {
+        await browser.storage.local.set({ [LAST_PROMPTED_KEY]: text });
       } catch {
         // ignore
       }
@@ -355,12 +376,14 @@ export default defineContentScript({
       setMode('peek');
       setCountdown();
       scheduleAutoClose();
+      void saveLastPrompted(text);
     };
 
     const shouldIgnoreText = (text: string): boolean => {
       const next = text.trim();
       if (!next) return true;
       if (next === globalLastClipboard) return true;
+      if (next === globalLastPrompted) return true;
       const now = Date.now();
       if (next === lastText && now - lastAt < 1200) return true;
       lastText = next;
@@ -384,8 +407,22 @@ export default defineContentScript({
     });
 
     const init = async () => {
-      await Promise.all([loadFolder(), loadLastClipboard()]);
+      await Promise.all([loadFolder(), loadLastClipboard(), loadLastPrompted()]);
     };
+
+    browser.storage.onChanged.addListener((changes, areaName) => {
+      if (areaName !== 'local') return;
+
+      const clipboardChanged = changes[LAST_CLIPBOARD_KEY];
+      if (clipboardChanged && typeof clipboardChanged.newValue === 'string') {
+        globalLastClipboard = clipboardChanged.newValue;
+      }
+
+      const promptedChanged = changes[LAST_PROMPTED_KEY];
+      if (promptedChanged && typeof promptedChanged.newValue === 'string') {
+        globalLastPrompted = promptedChanged.newValue;
+      }
+    });
 
     void init();
   },
