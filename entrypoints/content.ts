@@ -198,14 +198,15 @@ export default defineContentScript({
         zIndex: '2147483647',
         width: '360px',
         maxWidth: 'calc(100vw - 24px)',
-        background: '#ffffff',
-        border: '1px solid #d0d0d0',
-        borderRadius: '10px',
-        boxShadow: '0 10px 28px rgba(0, 0, 0, 0.16)',
-        color: '#222',
-        font: '13px/1.4 "Segoe UI","Microsoft YaHei",sans-serif',
+        background: '#f8fafb',
+        border: '1px solid #a7b0b6',
+        borderRadius: '2px',
+        boxShadow: 'none',
+        color: '#1a1f24',
+        font: '13px/1.4 "Consolas","Courier New","Microsoft YaHei",monospace',
         overflow: 'hidden',
         transition: 'all 180ms ease-out',
+        colorScheme: 'light',
       });
 
       const peek = document.createElement('div');
@@ -219,50 +220,54 @@ export default defineContentScript({
       });
       const icon = document.createElement('div');
       icon.textContent = '●';
-      Object.assign(icon.style, { color: '#244532', fontSize: '14px' });
+      Object.assign(icon.style, { color: '#2f8f53', fontSize: '14px' });
       const countdown = document.createElement('div');
       Object.assign(countdown.style, {
         position: 'absolute',
         right: '3px',
         top: '3px',
         fontSize: '10px',
-        color: '#767676',
+        color: '#4a5660',
       });
       peek.append(icon, countdown);
 
       const full = document.createElement('div');
       Object.assign(full.style, {
         display: 'none',
-        borderTop: '1px solid #ededed',
-        padding: '10px',
+        borderTop: '1px solid #a7b0b6',
+        padding: '12px',
+        background: '#ffffff',
       });
 
       const title = document.createElement('div');
       title.textContent = '检测到新复制内容，是否保存到 Obsidian？';
-      title.style.marginBottom = '8px';
+      Object.assign(title.style, {
+        marginBottom: '8px',
+        color: '#1a1f24',
+      });
       full.appendChild(title);
 
       const preview = document.createElement('div');
       Object.assign(preview.style, {
-        padding: '6px 8px',
-        background: '#f7f7f7',
-        border: '1px solid #e2e2e2',
-        borderRadius: '6px',
+        padding: '12px',
+        background: '#ffffff',
+        border: '1px solid #a7b0b6',
+        borderRadius: '2px',
         height: '120px',
         overflowY: 'auto',
-        marginBottom: '8px',
+        marginBottom: '10px',
         whiteSpace: 'pre-wrap',
         wordBreak: 'break-word',
-        fontSize: '12px',
+        fontSize: '13px',
         lineHeight: '1.5',
       });
       full.appendChild(preview);
 
       const counter = document.createElement('div');
       Object.assign(counter.style, {
-        fontSize: '11px',
-        color: '#999',
-        marginBottom: '8px',
+        fontSize: '12px',
+        color: '#4a5660',
+        marginBottom: '10px',
         textAlign: 'right',
       });
       full.appendChild(counter);
@@ -271,12 +276,25 @@ export default defineContentScript({
       folderInput.placeholder = '输入保存目录';
       Object.assign(folderInput.style, {
         width: '100%',
-        minHeight: '30px',
-        padding: '0 8px',
-        border: '1px solid #d0d0d0',
-        borderRadius: '6px',
-        marginBottom: '8px',
-        font: '13px/1.4 "Segoe UI","Microsoft YaHei",sans-serif',
+        minHeight: '32px',
+        padding: '0 10px',
+        border: '1px solid #a7b0b6',
+        borderRadius: '2px',
+        marginBottom: '10px',
+        background: '#ffffff',
+        color: '#1a1f24',
+        font: '13px/1.4 "Consolas","Courier New","Microsoft YaHei",monospace',
+        outline: 'none',
+        boxSizing: 'border-box',
+        appearance: 'none',
+      });
+      folderInput.addEventListener('focus', () => {
+        folderInput.style.borderColor = '#2f8f53';
+        folderInput.style.outline = '1px solid #2f8f53';
+      });
+      folderInput.addEventListener('blur', () => {
+        folderInput.style.borderColor = '#a7b0b6';
+        folderInput.style.outline = 'none';
       });
       folderInput.addEventListener('input', () => {
         void saveFolder(folderInput.value);
@@ -285,28 +303,36 @@ export default defineContentScript({
 
       const actions = document.createElement('div');
       Object.assign(actions.style, {
-        display: 'flex',
-        justifyContent: 'flex-end',
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
         gap: '8px',
       });
       const skip = document.createElement('button');
       skip.textContent = '忽略';
       Object.assign(skip.style, {
-        border: '1px solid #cfcfcf',
-        background: '#fff',
-        borderRadius: '6px',
-        padding: '4px 10px',
+        border: '1px solid #a7b0b6',
+        background: '#ffffff',
+        borderRadius: '2px',
+        color: '#1a1f24',
+        font: '600 13px/1.4 "Consolas","Courier New","Microsoft YaHei",monospace',
+        minHeight: '32px',
+        padding: '0 12px',
         cursor: 'pointer',
+        appearance: 'none',
       });
       skip.addEventListener('click', removePrompt);
       const save = document.createElement('button');
       save.textContent = '保存';
       Object.assign(save.style, {
-        border: '1px solid #bdbdbd',
-        background: '#f0f0f0',
-        borderRadius: '6px',
-        padding: '4px 10px',
+        border: '1px solid #2f8f53',
+        background: '#e9f4ed',
+        color: '#1e6a3c',
+        borderRadius: '2px',
+        font: '600 13px/1.4 "Consolas","Courier New","Microsoft YaHei",monospace',
+        minHeight: '32px',
+        padding: '0 12px',
         cursor: 'pointer',
+        appearance: 'none',
       });
       actions.append(skip, save);
       full.appendChild(actions);

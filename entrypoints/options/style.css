@@ -1,7 +1,17 @@
 :root {
-  font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
-  color: #17201b;
-  background: #f4f2ea;
+  --bg: #e9edf0;
+  --panel: #f8fafb;
+  --panel-2: #ffffff;
+  --line: #a7b0b6;
+  --line-strong: #6f7b84;
+  --text: #1a1f24;
+  --muted: #4a5660;
+  --green: #2f8f53;
+  --green-strong: #1e6a3c;
+  --error: #8f3a31;
+  font-family: "Consolas", "Courier New", "Microsoft YaHei", monospace;
+  color: var(--text);
+  background: var(--bg);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -13,6 +23,7 @@
 
 body {
   margin: 0;
+  background: linear-gradient(180deg, #f2f5f7 0%, #e7ebef 100%);
 }
 
 .settings {
@@ -22,16 +33,16 @@ body {
 }
 
 p {
-  color: #4f594f;
+  color: var(--muted);
   line-height: 1.6;
   margin: 0;
 }
 
 form,
 .hint {
-  background: #fffdf7;
-  border: 1px solid #d5d0c0;
-  border-radius: 8px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 2px;
   padding: 16px;
 }
 
@@ -42,7 +53,7 @@ form {
 
 label,
 legend {
-  color: #283a2e;
+  color: var(--text);
   display: grid;
   font-size: 14px;
   font-weight: 700;
@@ -52,9 +63,10 @@ legend {
 input[type="text"],
 input[type="password"],
 input:not([type]) {
-  border: 1px solid #c9c2ae;
-  border-radius: 8px;
-  color: #17201b;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  color: var(--text);
   font: inherit;
   min-height: 42px;
   padding: 0 12px;
@@ -62,13 +74,13 @@ input:not([type]) {
 }
 
 input:focus {
-  border-color: #53745f;
-  outline: 3px solid rgba(83, 116, 95, 0.18);
+  border-color: var(--green);
+  outline: 1px solid var(--green);
 }
 
 fieldset {
-  border: 1px solid #d5d0c0;
-  border-radius: 8px;
+  border: 1px solid var(--line);
+  border-radius: 2px;
   display: grid;
   gap: 10px;
   margin: 0;
@@ -90,10 +102,10 @@ fieldset {
 }
 
 button {
-  background: #fffdf7;
-  border: 1px solid #c9c2ae;
-  border-radius: 8px;
-  color: #17201b;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  color: var(--text);
   cursor: pointer;
   font: inherit;
   font-weight: 800;
@@ -102,36 +114,85 @@ button {
 }
 
 button:hover {
-  border-color: #53745f;
+  border-color: var(--green);
+  background: #f2f8f4;
 }
 
 .primary {
-  background: #244532;
-  border-color: #244532;
-  color: #ffffff;
+  background: #e9f4ed;
+  border-color: var(--green);
+  color: var(--green-strong);
+}
+
+button:focus-visible {
+  outline: 1px solid var(--green);
+  outline-offset: 1px;
+}
+
+.status[data-kind="success"] {
+  color: var(--green-strong);
+}
+
+.status[data-kind="error"] {
+  color: var(--error);
+}
+
+code {
+  background: #edf2f5;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  color: var(--green-strong);
+  padding: 2px 5px;
+}
+
+.settings::before {
+  content: "OBSIDIAN CLIPPER / TERMINAL MODE";
+  display: block;
+  border: 1px solid var(--line);
+  background: #f3f6f8;
+  color: var(--green-strong);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  margin-bottom: 12px;
+  padding: 6px 8px;
 }
 
 .status {
   min-height: 22px;
 }
 
-.status[data-kind="success"] {
-  color: #26683f;
-}
-
-.status[data-kind="error"] {
-  color: #9b321d;
-}
-
 .hint {
   margin-top: 18px;
 }
 
-code {
-  background: #ece7d9;
-  border-radius: 6px;
-  color: #244532;
-  padding: 2px 5px;
+.status[data-kind="success"]::before {
+  content: "[OK] ";
+}
+
+.status[data-kind="error"]::before {
+  content: "[ERR] ";
+}
+
+.primary:hover {
+  background: #ddf0e4;
+}
+
+.checkbox input {
+  accent-color: var(--green);
+}
+
+.actions button {
+  min-width: 140px;
+}
+
+.settings,
+form,
+.hint {
+  box-shadow: none;
+}
+
+.primary {
+  color: var(--green-strong);
 }
 
 @media (max-width: 560px) {

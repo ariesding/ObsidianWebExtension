@@ -1,7 +1,17 @@
 :root {
-  font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
-  color: #1f1f1f;
-  background: #ffffff;
+  --bg: #eef1f3;
+  --panel: #f8fafb;
+  --panel-2: #ffffff;
+  --line: #a7b0b6;
+  --line-strong: #6f7b84;
+  --text: #1a1f24;
+  --muted: #4a5660;
+  --green: #2f8f53;
+  --green-strong: #1e6a3c;
+  --error: #8f3a31;
+  font-family: "Consolas", "Courier New", "Microsoft YaHei", monospace;
+  color: var(--text);
+  background: var(--bg);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -15,9 +25,12 @@ body {
   margin: 0;
   width: 380px;
   min-height: 460px;
+  background: linear-gradient(180deg, #f2f5f7 0%, #e9edf0 100%);
 }
 
 .popup {
+  background: var(--panel);
+  border: 1px solid var(--line);
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -33,7 +46,7 @@ body {
 
 .icon-button {
   align-items: center;
-  border-radius: 6px;
+  border-radius: 2px;
   display: flex;
   height: 32px;
   justify-content: center;
@@ -42,10 +55,10 @@ body {
 }
 
 .top-row input {
-  background: #ffffff;
-  border: 1px solid #cccccc;
-  border-radius: 6px;
-  color: #1f1f1f;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  color: var(--text);
   font: inherit;
   flex: 1;
   min-height: 32px;
@@ -53,15 +66,15 @@ body {
 }
 
 .top-row input:focus {
-  border-color: #666666;
-  outline: 2px solid #d9d9d9;
+  border-color: var(--green);
+  outline: 1px solid var(--green);
 }
 
 textarea {
-  background: #ffffff;
-  border: 1px solid #cccccc;
-  border-radius: 6px;
-  color: #1f1f1f;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  color: var(--text);
   font: inherit;
   height: 240px;
   line-height: 1.45;
@@ -71,8 +84,8 @@ textarea {
 }
 
 textarea:focus {
-  border-color: #666666;
-  outline: 2px solid #d9d9d9;
+  border-color: var(--green);
+  outline: 1px solid var(--green);
 }
 
 .actions {
@@ -82,10 +95,10 @@ textarea:focus {
 }
 
 .last-result {
-  background: #fafafa;
-  border: 1px solid #dddddd;
-  border-radius: 6px;
-  color: #444444;
+  background: #f2f5f7;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  color: var(--muted);
   font-size: 12px;
   line-height: 1.45;
   min-height: 38px;
@@ -93,20 +106,20 @@ textarea:focus {
 }
 
 .last-result[data-kind="success"] {
-  border-color: #b9d3b9;
-  color: #1f4d1f;
+  border-color: var(--green);
+  color: var(--green-strong);
 }
 
 .last-result[data-kind="error"] {
-  border-color: #e0b4b4;
-  color: #8a2323;
+  border-color: #d4a39c;
+  color: var(--error);
 }
 
 button {
-  background: #ffffff;
-  border: 1px solid #c9c9c9;
-  border-radius: 6px;
-  color: #1f1f1f;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  color: var(--text);
   cursor: pointer;
   font: inherit;
   font-weight: 600;
@@ -115,7 +128,8 @@ button {
 }
 
 button:hover:not(:disabled) {
-  border-color: #888888;
+  border-color: var(--green);
+  background: #f2f8f4;
 }
 
 button:disabled {
@@ -124,12 +138,12 @@ button:disabled {
 }
 
 .primary {
-  background: #f0f0f0;
-  border-color: #bfbfbf;
-  color: #1f1f1f;
+  background: #e9f4ed;
+  border-color: var(--green);
+  color: var(--green-strong);
 }
 
 button:focus-visible {
-  outline: 2px solid #d9d9d9;
-  outline-offset: 2px;
+  outline: 1px solid var(--green);
+  outline-offset: 1px;
 }
