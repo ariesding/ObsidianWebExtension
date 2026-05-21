@@ -8,10 +8,10 @@ document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
       <button class="icon-button" id="settings" title="打开设置" type="button">⚙</button>
     </section>
 
-    <textarea id="preview" placeholder="点击“读取并保存”后会在这里显示内容" spellcheck="false"></textarea>
+    <textarea id="preview" placeholder="点击“读取剪贴板”后会在这里显示内容" spellcheck="false"></textarea>
 
     <div class="actions">
-      <button id="readClipboard" type="button">读取并保存</button>
+      <button id="readClipboard" type="button">读取剪贴板</button>
       <button id="saveClipboard" class="primary" type="button" disabled>发送到 Obsidian</button>
     </div>
 
@@ -55,6 +55,16 @@ async function saveFolderPreference() {
   await saveSettings({ ...settings, targetFolder: next });
 }
 
+let saveFolderTimer: number | null = null;
+
+function scheduleFolderPreferenceSave() {
+  if (saveFolderTimer !== null) window.clearTimeout(saveFolderTimer);
+  saveFolderTimer = window.setTimeout(() => {
+    void saveFolderPreference();
+    saveFolderTimer = null;
+  }, 350);
+}
+
 settingsButton.addEventListener('click', () => {
   void browser.runtime.openOptionsPage();
 });
@@ -63,7 +73,7 @@ targetFolderEl.addEventListener('change', () => {
   void saveFolderPreference();
 });
 targetFolderEl.addEventListener('input', () => {
-  void saveFolderPreference();
+  scheduleFolderPreferenceSave();
 });
 
 readButton.addEventListener('click', async () => {
@@ -81,19 +91,8 @@ readButton.addEventListener('click', async () => {
       return;
     }
 
-    const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
-    const result = await browser.runtime.sendMessage({
-      type: 'save-clip',
-      targetFolder: targetFolderEl.value.trim(),
-      payload: {
-        text,
-        source: 'clipboard',
-        pageTitle: tab?.title,
-        pageUrl: tab?.url,
-      },
-    });
-
-    await refreshLastResult();
+    lastResultEl.dataset.kind = 'idle';
+    lastResultEl.textContent = '已读取剪贴板，请确认内容后点击“发送到 Obsidian”。';
   } catch (error) {
     lastResultEl.dataset.kind = 'error';
     lastResultEl.textContent = `读取或保存失败：${(error as Error).message}`;
