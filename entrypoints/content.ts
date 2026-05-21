@@ -425,12 +425,66 @@ export default defineContentScript({
       showPrompt(currentText);
     };
 
+    const checkClipboardOnce = async () => {
+      try {
+        const text = await navigator.clipboard.readText();
+        handleDetectedText(text, 'clipboard');
+      } catch {
+        // ignore
+      }
+    };
+
+    const shouldUseSitePolling = () => {
+      const host = location.hostname.toLowerCase();
+      return (
+        host.includes('chatgpt.com') ||
+        host.includes('openai.com') ||
+        host.includes('claude.ai') ||
+        host.includes('gemini.google.com')
+      );
+    };
+
     document.addEventListener('copy', (event) => {
       const copied = event.clipboardData?.getData('text/plain')?.trim() ?? '';
       const selected = window.getSelection()?.toString().trim() ?? '';
       const text = copied || selected;
       handleDetectedText(text, 'selection');
     });
+
+    document.addEventListener('click', (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const trigger = target.closest('button,[role="button"],[aria-label]');
+      if (!trigger) return;
+
+      const textHint = `${(trigger as HTMLElement).innerText || ''} ${(trigger.getAttribute('aria-label') || '')}`
+        .toLowerCase()
+        .trim();
+      if (!textHint) return;
+
+      const looksLikeCopyAction =
+        textHint.includes('copy') ||
+        textHint.includes('复制') ||
+        textHint.includes('拷贝') ||
+        textHint.includes('copied') ||
+        textHint.includes('已复制');
+
+      if (!looksLikeCopyAction) return;
+      window.setTimeout(() => {
+        void checkClipboardOnce();
+      }, 120);
+    });
+
+    window.addEventListener('focus', () => {
+      void checkClipboardOnce();
+    });
+
+    if (shouldUseSitePolling()) {
+      window.setInterval(() => {
+        if (!document.hasFocus() || document.visibilityState !== 'visible') return;
+        void checkClipboardOnce();
+      }, 1500);
+    }
 
     const init = async () => {
       await Promise.all([loadFolder(), loadLastClipboard(), loadLastPrompted()]);
